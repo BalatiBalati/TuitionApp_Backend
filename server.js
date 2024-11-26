@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
+const bodyParser = require("body-parser");
 
 let propertiesReader = require("properties-reader");
 let propertiesPath = path.resolve(__dirname, "demo-db.properties");
@@ -37,8 +38,10 @@ let app = express();
 app.set('json spaces', 3);
 
 app.use(cors());
+//app.options('*', cors());
 app.use(morgan("short"));
 app.use(express.json());
+//app.use(bodyParser.json);
 
 app.param('collectionName', function(req, res, next, collectionName){
     req.collection = db.collection(collectionName);
@@ -62,8 +65,6 @@ app.get('/courses', async function(req, res, next){
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
-
-
 
 // Route to fetch records from a collection with limit, sorting, and ordering
 app.get('/collections/:collectionName/:max/:sortAspect/:sortOrder', function(req, res, next){
@@ -100,14 +101,36 @@ app.get('/collections/:collectionName/:id', function(req, res, next){
 });
 
 // Route to handle POST request for creating a new record in the collection
-app.post('/collections/:collectionName', function(req, res, next){
-    req.collection.insertOne(req.body, function(err, result){
-        if (err) {
-            return next(err);
-        }
-        res.status(201).json(result.ops[0]);  // Send the created record as a response
-    });
+
+app.post('/UserData', async (req, res) => {
+    try{
+        const database = client.db("EdTech");
+        const order = database.collection("UserData");
+        const result = await order.insertOne(req.body);
+        res.json(result);
+        console.log("Posted a new order");
+    } catch(error){
+        res.status(500).json({ error: 'Failed to create order' });
+        // process.exit(1);
+    }
 });
+// app.post('/UserData', function(req, res, next){
+    
+//     const database = client.db('EdTech');
+//     const newUser = req.body;
+//     res.send(newUser);
+
+//     // if (!newUser.name || !newUser.phone) {
+//     //     return res.status(400).json({ message: "Name and Phone are required" });
+//     // }
+
+//     database.collection('UserData').insertOne(newUser, function(err, result){
+//         if (err) {
+//             return next(err);
+//         }
+//         res.status(201).json({ message: 'User added successfully' });
+//     });
+// });
 
 // Route to handle PUT request for updating a record in the collection
 app.put('/collections/:collectionName/:id', function(req, res, next){
