@@ -1,0 +1,23 @@
+{
+  "name": "tuitionapp_backend",
+  "version": "1.0.0",
+  "description": "Reset, after delete. \r First commit will involve package installation",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "mongodb": "^6.11.0",
+    "mongosh": "^2.3.3",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.7",
+    "path": "^0.12.7",
+    "properties-reader": "^2.3.0"
+  }
+}
