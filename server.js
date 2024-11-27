@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
-const bodyParser = require("body-parser");
+// const bodyParser = require("body-parser");
 
 let propertiesReader = require("properties-reader");
 let propertiesPath = path.resolve(__dirname, "demo-db.properties");
@@ -23,7 +23,7 @@ let db;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const client = new MongoClient(uri, { serverApi: ServerApiVersion.v1 });
 
 client.connect(err => {
     if (err) {
@@ -114,23 +114,31 @@ app.post('/UserData', async (req, res) => {
         // process.exit(1);
     }
 });
-// app.post('/UserData', function(req, res, next){
-    
-//     const database = client.db('EdTech');
-//     const newUser = req.body;
-//     res.send(newUser);
 
-//     // if (!newUser.name || !newUser.phone) {
-//     //     return res.status(400).json({ message: "Name and Phone are required" });
-//     // }
+app.put('/UserData', async (req, res) => {
+    const { courseId, number } = req.body;
 
-//     database.collection('UserData').insertOne(newUser, function(err, result){
-//         if (err) {
-//             return next(err);
-//         }
-//         res.status(201).json({ message: 'User added successfully' });
-//     });
-// });
+    if (number < 0) {
+        return res.status(400).json({ error: 'Inventory cannot be negative' });
+    }
+
+    try {
+        const db = client.db("EdTech");
+        const result = await db.collection('UserData').updateOne(
+            { _id: new ObjectId(courseId) },
+            { $set: { availableInventory: number } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ error: 'Course not found or no changes made' });
+        }
+
+        res.json({ message: 'Inventory updated successfully' });
+    } catch (error) {
+        console.error('Failed to update inventory:', error);
+        res.status(500).json({ error: 'Failed to update inventory' });
+    }
+}), 
 
 // Route to handle PUT request for updating a record in the collection
 app.put('/collections/:collectionName/:id', function(req, res, next){
