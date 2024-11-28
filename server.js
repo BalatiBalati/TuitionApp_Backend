@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
-// const bodyParser = require("body-parser");
+const port = process.env.PORT || 10000
 
 let propertiesReader = require("properties-reader");
 let propertiesPath = path.resolve(__dirname, "demo-db.properties");
@@ -16,7 +16,6 @@ let dbUrl = properties.get("db.dbUrl");
 let dbParams = properties.get("db.params");
 
 // Create the MongoDB connection string using the provided details.
-// Ensure the database name and parameters are included in the URI.
 const uri = `${dbPrefix}${dbUsername}:${dbPwd}${dbUrl}${dbName}${dbParams}`;
 
 let db;
@@ -38,27 +37,24 @@ let app = express();
 app.set('json spaces', 3);
 
 app.use(cors());
-//app.options('*', cors());
 app.use(morgan("short"));
 app.use(express.json());
-//app.use(bodyParser.json);
 
-app.param('collectionName', function(req, res, next, collectionName){
+app.param('collectionName', function(req, res, next, collectionName) {
     req.collection = db.collection(collectionName);
     return next();
 });
 
-app.get('/', function(req, res, next){
+app.get('/', function(req, res, next) {
     res.send('Select a collection, e.g., /collections/courses');
 });
 
 // Route to fetch all records from a collection
-app.get('/courses', async function(req, res, next){
+app.get('/courses', async function(req, res, next) {
     try {
-        const database = client.db('EdTech');
-        const items = await database.collection('courses').find({}).toArray();
+        const db = client.db("EdTech");
+        const items = await db.collection('courses').find({}).toArray();
         res.json(items);
-        //db = client.db('EdTech');  // Connect to the 'EdTech' database
         console.log('Connected to MongoDB');
     } catch (error) {
         console.error('Failed to connect to MongoDB', error);
@@ -66,46 +62,11 @@ app.get('/courses', async function(req, res, next){
     }
 });
 
-// Route to fetch records from a collection with limit, sorting, and ordering
-app.get('/collections/:collectionName/:max/:sortAspect/:sortOrder', function(req, res, next){
-    const max = parseInt(req.params.max, 10);
-    const sortDirection = req.params.sortOrder === "desc" ? -1 : 1;
-
-    req.collection.find({})
-        .limit(max)
-        .sort([[req.params.sortAspect, sortDirection]])
-        .toArray(function(err, results){
-            if (err) {
-                return next(err);
-            }
-            res.json(results);
-        });
-});
-
-// Route to fetch a single record by ID
-app.get('/collections/:collectionName/:id', function(req, res, next){
-    try {
-        const objectId = new ObjectId(req.params.id);  // Correctly handle ObjectId
-        req.collection.findOne({ _id: objectId }, function(err, result){
-            if (err) {
-                return next(err);
-            }
-            if (!result) {
-                return res.status(404).send("Record not found");
-            }
-            res.json(result);
-        });
-    } catch (e) {
-        return res.status(400).send("Invalid ID format");
-    }
-});
-
 // Route to handle POST request for creating a new record in the collection
-
 app.post('/UserData', async (req, res) => {
     try{
-        const database = client.db("EdTech");
-        const order = database.collection("UserData");
+        const db = client.db("EdTech");
+        const order = db.collection("UserData");
         const result = await order.insertOne(req.body);
         res.json(result);
         console.log("Posted a new order");
@@ -114,19 +75,23 @@ app.post('/UserData', async (req, res) => {
         // process.exit(1);
     }
 });
+// Route to handle PUT request for updating a course's inventory
+app.put('/UpdatePrograms', async (req, res) => {
+    const { courseId, availableInventory } = req.body;
 
-app.put('/UserData', async (req, res) => {
-    const { courseId, number } = req.body;
-
-    if (number < 0) {
+    if (availableInventory < 0) {
         return res.status(400).json({ error: 'Inventory cannot be negative' });
     }
 
     try {
+        // Convert courseId from string to ObjectId
+        const objectId = new ObjectId(courseId);
+
+        // Update the course's availableInventory
         const db = client.db("EdTech");
-        const result = await db.collection('UserData').updateOne(
-            { _id: new ObjectId(courseId) },
-            { $set: { availableInventory: number } }
+        const result = await db.collection('courses').updateOne(
+            { _id: objectId },
+            { $set: { availableInventory: availableInventory } }
         );
 
         if (result.modifiedCount === 0) {
@@ -138,16 +103,17 @@ app.put('/UserData', async (req, res) => {
         console.error('Failed to update inventory:', error);
         res.status(500).json({ error: 'Failed to update inventory' });
     }
-}), 
+});
 
-// Route to handle PUT request for updating a record in the collection
-app.put('/collections/:collectionName/:id', function(req, res, next){
+// Route to handle PUT request for updating a record in a collection by ObjectId
+app.put('/collections/:collectionName/:id', function(req, res, next) {
     try {
         const objectId = new ObjectId(req.params.id);  // Handle ObjectId
+
         req.collection.updateOne(
             { _id: objectId },
             { $set: req.body },
-            function(err, result){
+            function(err, result) {
                 if (err) {
                     return next(err);
                 }
@@ -162,11 +128,12 @@ app.put('/collections/:collectionName/:id', function(req, res, next){
     }
 });
 
-// Route to handle DELETE request for removing a record from the collection
-app.delete('/collections/:collectionName/:id', function(req, res, next){
+// Route to handle DELETE request for removing a record from a collection by ObjectId
+app.delete('/collections/:collectionName/:id', function(req, res, next) {
     try {
         const objectId = new ObjectId(req.params.id);  // Handle ObjectId
-        req.collection.deleteOne({ _id: objectId }, function(err, result){
+
+        req.collection.deleteOne({ _id: objectId }, function(err, result) {
             if (err) {
                 return next(err);
             }
@@ -181,13 +148,13 @@ app.delete('/collections/:collectionName/:id', function(req, res, next){
 });
 
 // Catch-all for logging incoming requests
-app.use(function(req, res, next){
+app.use(function(req, res, next) {
     console.log("Incoming request", req.url);
     next();
 });
 
 // Catch-all for handling 404 errors
-app.use(function(req, res){
+app.use(function(req, res) {
     res.status(404).send("Resource not found!");
 });
 
