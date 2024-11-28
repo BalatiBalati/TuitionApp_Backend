@@ -162,6 +162,6 @@ app.use(function(req, res) {
 });
 
 // Start the server
-app.listen(port, () => {
+app.listen(3001, () => {
     console.log(`Server is running on port ${ port }`);
 });
