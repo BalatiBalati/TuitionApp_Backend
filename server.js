@@ -39,6 +39,9 @@ app.set('json spaces', 3);
 app.use(cors());
 app.use(morgan("short"));
 app.use(express.json());
+// Serve images from the "images" directory
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.param('collectionName', function(req, res, next, collectionName) {
     req.collection = db.collection(collectionName);
@@ -160,5 +163,5 @@ app.use(function(req, res) {
 
 // Start the server
 app.listen(port, () => {
-    console.log('Server is running on port 3001');
+    console.log(`Server is running on port ${ port }`);
 });
