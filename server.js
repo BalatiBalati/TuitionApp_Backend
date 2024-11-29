@@ -37,20 +37,11 @@ let app = express();
 app.set('json spaces', 3);
 
 app.use(cors());
-app.use(morgan("short"));
+app.use(morgan("combined"));
 app.use(express.json());
+
 // Serve images from the "images" directory
-
 app.use('/images', express.static(path.join(__dirname, 'images')));
-
-app.param('collectionName', function(req, res, next, collectionName) {
-    req.collection = db.collection(collectionName);
-    return next();
-});
-
-app.get('/', function(req, res, next) {
-    res.send('Select a collection, e.g., /collections/courses');
-});
 
 // Route to fetch all records from a collection
 app.get('/courses', async function(req, res, next) {
@@ -78,6 +69,7 @@ app.post('/UserData', async (req, res) => {
         // process.exit(1);
     }
 });
+
 // Route to handle PUT request for updating a course's inventory
 app.put('/UpdatePrograms', async (req, res) => {
     const { courseId, availableInventory } = req.body;
@@ -106,59 +98,6 @@ app.put('/UpdatePrograms', async (req, res) => {
         console.error('Failed to update inventory:', error);
         res.status(500).json({ error: 'Failed to update inventory' });
     }
-});
-
-// Route to handle PUT request for updating a record in a collection by ObjectId
-app.put('/collections/:collectionName/:id', function(req, res, next) {
-    try {
-        const objectId = new ObjectId(req.params.id);  // Handle ObjectId
-
-        req.collection.updateOne(
-            { _id: objectId },
-            { $set: req.body },
-            function(err, result) {
-                if (err) {
-                    return next(err);
-                }
-                if (result.modifiedCount === 0) {
-                    return res.status(404).send("Record not found");
-                }
-                res.json({ message: "Record updated successfully" });
-            }
-        );
-    } catch (e) {
-        return res.status(400).send("Invalid ID format");
-    }
-});
-
-// Route to handle DELETE request for removing a record from a collection by ObjectId
-app.delete('/collections/:collectionName/:id', function(req, res, next) {
-    try {
-        const objectId = new ObjectId(req.params.id);  // Handle ObjectId
-
-        req.collection.deleteOne({ _id: objectId }, function(err, result) {
-            if (err) {
-                return next(err);
-            }
-            if (result.deletedCount === 0) {
-                return res.status(404).send("Record not found");
-            }
-            res.json({ message: "Record deleted successfully" });
-        });
-    } catch (e) {
-        return res.status(400).send("Invalid ID format");
-    }
-});
-
-// Catch-all for logging incoming requests
-app.use(function(req, res, next) {
-    console.log("Incoming request", req.url);
-    next();
-});
-
-// Catch-all for handling 404 errors
-app.use(function(req, res) {
-    res.status(404).send("Resource not found!");
 });
 
 // Start the server
