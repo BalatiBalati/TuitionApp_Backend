@@ -64,13 +64,21 @@ By default, the app will run on http://localhost:3000.
 ## Folder Structure
 
 tuitionapp/
+
 ├── server.js          # Entry point for the backend server
+
 ├── products.js        # Handles course data and logic
+
 ├── public/            # Contains static files (CSS, images)
+
 │   ├── styles.css     # Main CSS file for styling
+
 ├── views/             # Mustache templates for server-side rendering
+
 ├── package.json       # Project metadata and dependencies
+
 ├── .env               # Environment variables (not included in the repo)
+
 └── README.md          # Documentation
 
 
